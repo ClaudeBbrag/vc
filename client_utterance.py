@@ -61,10 +61,7 @@ def command_listener():
                 except UnicodeDecodeError: pass
             time.sleep(0.1)
     else: # Linux, macOSの場合
-        import select
-        import tty
-        import termios
-        old_settings = termios.tcgetattr(sys.stdin)
+    import select
         try:
             tty.setcbreak(sys.stdin.fileno())
             while not stop_event.is_set():
@@ -96,7 +93,14 @@ def select_speaker():
     return speaker_name
 
 def main():
+    import select
+        import tty
+        import termios
+        old_settings = termios.tcgetattr(sys.stdin)
     try:
+        if os.name == 'nt':
+            tty.setcbreak(sys.stdin.fileno())
+
         input_device_id = find_device_id(INPUT_DEVICE_NAME, 'input')
         output_device_id = find_device_id(OUTPUT_DEVICE_NAME, 'output')
         current_speaker = select_speaker()
@@ -180,6 +184,9 @@ def main():
     except Exception as e:
         print(f"\n[エラー] 予期せぬエラーが発生しました: {e}")
     finally:
+        if os.name != 'nt':
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            print("\nターミナル設定を元に戻しました。")
         stop_event.set()
         print("クライアントを終了しました。")
 
