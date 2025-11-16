@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seedvc-rtp
+  namespace: seedvc
+  labels:
+    app: seedvc
+    component: voice-conversion
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: seedvc
+      component: voice-conversion
+  template:
+    metadata:
+      labels:
+        app: seedvc
+        component: voice-conversion
+    spec:
+      # Node selector for GPU nodes
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4  # For GKE
+        # For EKS: node.kubernetes.io/instance-type: g4dn.xlarge
+        # For AKS: accelerator: nvidia
+
+      containers:
+      - name: seedvc
+        image: seedvc:latest  # Replace with your registry
+        imagePullPolicy: Always
+
+        command: ["python3", "server.py"]
+        args:
+          - --mode
+          - rtp
+          - --reference
+          - /app/data/reference.wav
+          - --input-port
+          - "5004"
+          - --output-port
+          - "5005"
+          - --output-host
+          - "0.0.0.0"
+
+        ports:
+        - containerPort: 5004
+          name: rtp-input
+          protocol: UDP
+        - containerPort: 5005
+          name: rtp-output
+          protocol: UDP
+        - containerPort: 8080
+          name: health
+          protocol: TCP
+
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
+        - name: REFERENCE_VOICE
+          value: "/app/data/reference.wav"
+
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+            nvidia.com/gpu: "1"
+
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+          readOnly: true
+        - name: models
+          mountPath: /app/models
+        - name: output
+          mountPath: /app/output
+
+        livenessProbe:
+          exec:
+            command:
+            - python3
+            - -c
+            - "import torch; assert torch.cuda.is_available()"
+          initialDelaySeconds: 120
+          periodSeconds: 60
+          timeoutSeconds: 30
+          failureThreshold: 3
+
+        readinessProbe:
+          exec:
+            command:
+            - python3
+            - -c
+            - "import torch; print('GPU Ready' if torch.cuda.is_available() else exit(1))"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+
+      volumes:
+      - name: data
+        configMap:
+          name: seedvc-reference-voice
+      - name: models
+        persistentVolumeClaim:
+          claimName: seedvc-models-pvc
+      - name: output
+        emptyDir: {}
+
+      # Prevent pods from being scheduled on the same node (for HA)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - seedvc
+              topologyKey: kubernetes.io/hostname
