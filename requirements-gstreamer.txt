@@ -1,0 +1,23 @@
+# GStreamer Integration Dependencies for Seed-VC
+# Install system packages first (see GSTREAMER_IMPLEMENTATION_GUIDE.md)
+
+# Python GStreamer bindings
+PyGObject>=3.42.0
+
+# WebRTC support (for cloud deployment)
+aiohttp>=3.8.0
+aiortc>=1.5.0  # Alternative pure-Python WebRTC (optional)
+
+# HTTP Server
+flask>=2.3.0  # For HTTP API mode
+
+# Additional utilities
+python-socketio>=5.7.0  # For WebRTC signaling
+websockets>=11.0  # WebSocket support for signaling
+
+# Monitoring and metrics (production deployment)
+prometheus-client>=0.16.0  # Metrics collection
+psutil>=5.9.0  # System resource monitoring
+
+# Load testing (development)
+# locust>=2.14.0  # Uncomment for load testing

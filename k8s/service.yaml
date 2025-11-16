@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: seedvc-rtp-service
+  namespace: seedvc
+  labels:
+    app: seedvc
+spec:
+  type: LoadBalancer
+  selector:
+    app: seedvc
+    component: voice-conversion
+  ports:
+  - name: rtp-input
+    port: 5004
+    targetPort: 5004
+    protocol: UDP
+  - name: rtp-output
+    port: 5005
+    targetPort: 5005
+    protocol: UDP
+  - name: health
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600

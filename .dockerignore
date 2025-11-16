@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Models (downloaded at runtime)
+models/
+*.pth
+*.ckpt
+*.safetensors
+
+# Data
+data/*.wav
+output/
+*.wav
+*.mp3
+*.flac
+
+# Documentation
+*.md
+!README.md
+!DOCKER_DEPLOYMENT.md
+
+# Test files
+test_*.py
+examples/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Kubernetes
+k8s/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp

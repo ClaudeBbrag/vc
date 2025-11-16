@@ -457,5 +457,252 @@ class SeedVCWrapper:
         
         if not stream_output:
             return np.concatenate(generated_wave_chunks)
-        
-        return None, None 
+
+        return None, None
+
+    def convert_voice_gstreamer(self,
+                               reference_wav_path: str,
+                               diffusion_steps: int = 10,
+                               inference_cfg_rate: float = 0.7,
+                               input_type: str = 'file',
+                               output_type: str = 'file',
+                               f0_condition: bool = False,
+                               auto_f0_adjust: bool = True,
+                               pitch_shift: int = 0,
+                               chunk_duration_ms: float = 180.0,
+                               **io_kwargs):
+        """
+        Real-time voice conversion with GStreamer network streaming.
+
+        Args:
+            reference_wav_path: Path to reference voice sample
+            diffusion_steps: Number of diffusion steps (4-10 for real-time)
+            inference_cfg_rate: Classifier-free guidance rate
+            input_type: 'file', 'rtp', 'udp', 'test', 'autoaudiosrc'
+            output_type: 'file', 'rtp', 'udp', 'autoaudiosink'
+            f0_condition: Whether to use F0 conditioning
+            auto_f0_adjust: Whether to automatically adjust F0
+            pitch_shift: Pitch shift in semitones
+            chunk_duration_ms: Chunk duration in milliseconds (default: 180ms)
+            **io_kwargs: Additional args for GStreamer (e.g., input_file, port)
+        """
+        try:
+            from modules.gstreamer_bridge import GStreamerAudioBridge
+        except ImportError:
+            raise ImportError(
+                "GStreamer bridge not available. Please install GStreamer and PyGObject:\n"
+                "  sudo apt-get install gstreamer1.0-tools gstreamer1.0-plugins-* python3-gi\n"
+                "  pip install PyGObject"
+            )
+
+        import time
+
+        # Select appropriate models based on F0 condition
+        inference_module = self.model if not f0_condition else self.model_f0
+        mel_fn = self.to_mel if not f0_condition else self.to_mel_f0
+        bigvgan_fn = self.bigvgan_model if not f0_condition else self.bigvgan_44k_model
+        sr = 22050 if not f0_condition else 44100
+        hop_length = 256 if not f0_condition else 512
+        overlap_wave_len = self.overlap_frame_len * hop_length
+
+        # Initialize GStreamer bridge
+        print(f"Initializing GStreamer bridge (sample rate: {sr} Hz)...")
+        bridge = GStreamerAudioBridge(sample_rate=sr, channels=1, debug=True)
+
+        # Create pipelines
+        print(f"Creating input pipeline ({input_type})...")
+        bridge.create_input_pipeline(input_type, **io_kwargs)
+
+        print(f"Creating output pipeline ({output_type})...")
+        bridge.create_output_pipeline(output_type, **io_kwargs)
+
+        bridge.start()
+        print("GStreamer bridge started successfully!")
+
+        # Load reference voice
+        print(f"Loading reference voice from {reference_wav_path}...")
+        ref_audio = librosa.load(reference_wav_path, sr=sr, mono=True)[0]
+        ref_audio = torch.from_numpy(ref_audio[:sr * 25]).unsqueeze(0).float().to(self.device)
+
+        # Precompute reference features
+        print("Extracting reference voice features...")
+        with torch.no_grad():
+            # Resample to 16kHz for Whisper
+            ref_waves_16k = torchaudio.functional.resample(ref_audio, sr, 16000)
+
+            # Extract Whisper features
+            S_ori = self._process_whisper_features(ref_waves_16k, is_source=False)
+
+            # Extract speaker style
+            feat2 = torchaudio.compliance.kaldi.fbank(
+                ref_waves_16k,
+                num_mel_bins=80,
+                dither=0,
+                sample_frequency=16000
+            )
+            feat2 = feat2 - feat2.mean(dim=0, keepdim=True)
+            style2 = self.campplus_model(feat2.unsqueeze(0))
+
+            # Mel spectrogram of reference
+            mel2 = mel_fn(ref_audio.to(self.device).float())
+
+            # Compute prompt condition
+            target2_lengths = torch.LongTensor([mel2.size(2)]).to(self.device)
+            prompt_condition, _, _, _, _ = inference_module.length_regulator(
+                S_ori, ylens=target2_lengths, n_quantizers=3, f0=None
+            )
+
+            # F0 reference if needed
+            if f0_condition:
+                F0_ori = self.rmvpe.infer_from_audio(ref_waves_16k[0], thred=0.03)
+                if self.device == "mps":
+                    F0_ori = torch.from_numpy(F0_ori).float().to(self.device)[None]
+                else:
+                    F0_ori = torch.from_numpy(F0_ori).to(self.device)[None]
+                voiced_F0_ori = F0_ori[F0_ori > 1]
+                voiced_log_f0_ori = torch.log(voiced_F0_ori + 1e-5)
+                median_log_f0_ori = torch.median(voiced_log_f0_ori)
+            else:
+                median_log_f0_ori = None
+
+        # Processing parameters
+        chunk_duration = chunk_duration_ms / 1000.0  # Convert to seconds
+        chunk_size = int(sr * chunk_duration)
+        overlap_size = int(sr * 0.04)  # 40ms overlap
+
+        print(f"\nStarting real-time voice conversion:")
+        print(f"  Chunk size: {chunk_size} samples ({chunk_duration * 1000}ms)")
+        print(f"  Overlap: {overlap_size} samples (40ms)")
+        print(f"  Sample rate: {sr} Hz")
+        print(f"  Diffusion steps: {diffusion_steps}")
+        print(f"  F0 conditioning: {f0_condition}")
+        print("\nPress Ctrl+C to stop\n")
+
+        # Accumulator for overlap-add
+        previous_output_tail = None
+        chunks_processed = 0
+
+        try:
+            while True:
+                # Check if we have enough input
+                available = bridge.get_input_available()
+
+                if available >= chunk_size:
+                    # Read chunk
+                    source_chunk = bridge.read_input(chunk_size)
+
+                    if source_chunk is None:
+                        time.sleep(0.01)
+                        continue
+
+                    # Convert to torch tensor
+                    source_tensor = torch.from_numpy(source_chunk).unsqueeze(0).float().to(self.device)
+
+                    # Process with Seed-VC
+                    with torch.no_grad():
+                        # Extract features from source
+                        source_16k = torchaudio.functional.resample(source_tensor, sr, 16000)
+
+                        # Whisper features
+                        S_alt = self._process_whisper_features(source_16k, is_source=True)
+
+                        # Mel spectrogram
+                        mel_source = mel_fn(source_tensor.to(self.device).float())
+
+                        # F0 processing if needed
+                        if f0_condition:
+                            F0_alt = self.rmvpe.infer_from_audio(source_16k[0], thred=0.03)
+                            if self.device == "mps":
+                                F0_alt = torch.from_numpy(F0_alt).float().to(self.device)[None]
+                            else:
+                                F0_alt = torch.from_numpy(F0_alt).to(self.device)[None]
+
+                            voiced_F0_alt = F0_alt[F0_alt > 1]
+                            log_f0_alt = torch.log(F0_alt + 1e-5)
+                            voiced_log_f0_alt = torch.log(voiced_F0_alt + 1e-5)
+                            median_log_f0_alt = torch.median(voiced_log_f0_alt)
+
+                            # Shift F0
+                            shifted_log_f0_alt = log_f0_alt.clone()
+                            if auto_f0_adjust:
+                                shifted_log_f0_alt[F0_alt > 1] = log_f0_alt[F0_alt > 1] - median_log_f0_alt + median_log_f0_ori
+                            shifted_f0_alt = torch.exp(shifted_log_f0_alt)
+                            if pitch_shift != 0:
+                                shifted_f0_alt[F0_alt > 1] = self.adjust_f0_semitones(shifted_f0_alt[F0_alt > 1], pitch_shift)
+                        else:
+                            shifted_f0_alt = None
+
+                        # Length regulator
+                        source_lengths = torch.LongTensor([mel_source.size(2)]).to(self.device)
+                        cond, _, _, _, _ = inference_module.length_regulator(
+                            S_alt, ylens=source_lengths, n_quantizers=3, f0=shifted_f0_alt
+                        )
+
+                        # Concatenate with prompt
+                        cond = torch.cat([prompt_condition, cond], dim=1)
+
+                        # Run diffusion
+                        max_source_length = mel_source.size(2) + mel2.size(2)
+                        vc_target = inference_module.cfm.inference(
+                            cond,
+                            torch.LongTensor([max_source_length]).to(self.device),
+                            mel2, style2, None,
+                            diffusion_steps,
+                            inference_cfg_rate=inference_cfg_rate
+                        )
+
+                        # Remove reference portion
+                        vc_target = vc_target[:, :, mel2.size(2):]
+
+                        # Vocoding
+                        vc_wave = bigvgan_fn(vc_target.float())[0]
+                        output_chunk = vc_wave.squeeze().cpu().numpy()
+
+                    # Apply overlap-add if we have previous output
+                    if previous_output_tail is not None and overlap_size > 0 and len(output_chunk) > overlap_size:
+                        # Crossfade
+                        fade_in = np.cos(np.linspace(np.pi / 2, 0, overlap_size)) ** 2
+                        fade_out = np.cos(np.linspace(0, np.pi / 2, overlap_size)) ** 2
+
+                        output_chunk[:overlap_size] = (
+                            output_chunk[:overlap_size] * fade_in +
+                            previous_output_tail * fade_out
+                        )
+
+                    # Save tail for next iteration
+                    if len(output_chunk) > overlap_size:
+                        previous_output_tail = output_chunk[-overlap_size:].copy()
+
+                    # Write to output
+                    bridge.write_output(output_chunk)
+
+                    chunks_processed += 1
+                    if chunks_processed % 10 == 0:
+                        stats = bridge.get_stats()
+                        print(f"Processed {chunks_processed} chunks | "
+                              f"Received: {stats['samples_received']:,} samples | "
+                              f"Sent: {stats['samples_sent']:,} samples | "
+                              f"Buffer: {stats['input_buffer_samples']} samples")
+
+                else:
+                    # Not enough data, wait
+                    time.sleep(0.01)
+
+        except KeyboardInterrupt:
+            print("\n\nStopping voice conversion...")
+
+        except Exception as e:
+            print(f"\nError during processing: {e}")
+            import traceback
+            traceback.print_exc()
+
+        finally:
+            print("\nCleaning up...")
+            bridge.stop()
+            stats = bridge.get_stats()
+            print(f"\nFinal statistics:")
+            print(f"  Chunks processed: {chunks_processed}")
+            print(f"  Samples received: {stats['samples_received']:,}")
+            print(f"  Samples sent: {stats['samples_sent']:,}")
+            print(f"  Errors: {stats['errors']}")
+            print("Voice conversion stopped")

@@ -1,0 +1,47 @@
+; WebSockets transport for Janus
+; Enables WebSocket connections from browsers
+
+[general]
+; WebSocket is enabled by default
+enabled = yes
+
+; JSON format
+json = compact
+
+; WebSocket server configuration
+[ws]
+; Port for WebSocket
+port = 8188
+
+; Interface to bind to (0.0.0.0 = all)
+interface = 0.0.0.0
+
+; IP to use in the WebSocket URL (autodetected if not set)
+;ip = 1.2.3.4
+
+; Logging
+;logging = no
+
+; ACL for WebSocket connections
+;ws_acl = 127.0.0.1,192.168.0.0/16
+
+; Secure WebSocket (WSS)
+[wss]
+enabled = yes
+port = 8989
+
+; SSL certificates for WSS
+; You need to provide your own certificates
+;secure_port = 8989
+;wss_certificate = /path/to/cert.pem
+;wss_key = /path/to/key.pem
+
+; Admin WebSocket
+[admin]
+admin_ws = yes
+admin_ws_port = 7188
+admin_ws_interface = 0.0.0.0
+
+; Admin WSS
+;admin_wss = yes
+;admin_wss_port = 7989

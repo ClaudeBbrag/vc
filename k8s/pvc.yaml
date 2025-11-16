@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seedvc-models-pvc
+  namespace: seedvc
+spec:
+  accessModes:
+    - ReadWriteMany  # Shared across pods
+  resources:
+    requests:
+      storage: 50Gi  # Adjust based on model size
+  storageClassName: standard  # Use your cloud provider's storage class
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seedvc-reference-voice
+  namespace: seedvc
+data:
+  # You need to create this from your reference WAV file
+  # kubectl create configmap seedvc-reference-voice --from-file=reference.wav=./data/reference.wav -n seedvc
+  .placeholder: "Create this ConfigMap from your reference.wav file"
