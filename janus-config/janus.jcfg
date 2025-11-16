@@ -1,0 +1,95 @@
+; Janus general configuration
+; This is the main Janus configuration file
+
+[general]
+configs_folder = /opt/janus/etc/janus
+plugins_folder = /opt/janus/lib/janus/plugins
+transports_folder = /opt/janus/lib/janus/transports
+events_folder = /opt/janus/lib/janus/events
+loggers_folder = /opt/janus/lib/janus/loggers
+
+; Debug/logging level
+debug_level = 4
+debug_timestamps = yes
+debug_colors = no
+debug_locks = no
+
+; Interface to use (will be used in SDP)
+; Default is to autodetect
+;interface = 1.2.3.4
+
+; API secret for authentication
+; Uncomment to enable
+;api_secret = janusrocks
+
+; Admin API secret
+;admin_secret = janusoverlord
+
+; Server name for SDP
+server_name = Seed-VC Janus Gateway
+
+; Session timeout (seconds)
+session_timeout = 60
+
+; Reclaim session timeout (seconds)
+reclaim_session_timeout = 0
+
+; Event handlers mode
+;event_handlers = yes
+
+; WebSocket ACL
+;ws_acl = 127.0.0.1,192.168.0.0/16
+
+; STUN server
+;stun_server = stun.l.google.com
+;stun_port = 19302
+
+; ICE-Lite mode
+;ice_lite = yes
+
+; ICE-TCP support
+;ice_tcp = yes
+
+; Full-trickle support
+;full_trickle = yes
+
+; IPv6 support
+;ipv6 = yes
+
+; Min/max port range for RTP/RTCP
+rtp_port_range = 10000-10200
+
+; DTLS certificate
+[certificates]
+cert_pem = /opt/janus/share/janus/certs/mycert.pem
+cert_key = /opt/janus/share/janus/certs/mycert.key
+
+; Media configuration
+[media]
+; Maximum bitrate (kbps)
+;max_nack_queue = 1000
+
+; DSCP value for RTP
+;rtp_dscp = 46
+
+; Logging configuration
+[nat]
+; NAT 1:1 mapping
+;nat_1_1_mapping = 1.2.3.4
+
+; STUN server for NAT detection
+;stun_server = stun.l.google.com
+;stun_port = 19302
+
+; TURN REST API
+;turn_rest_api = https://example.com/turn
+;turn_rest_api_key = secret
+;turn_rest_api_method = GET
+
+; Static TURN servers
+;turn_server = turn:1.2.3.4:3478
+;turn_user = username
+;turn_pwd = password
+
+; ICE keep-alive
+;ice_keepalive_interval = 15

@@ -1,0 +1,90 @@
+; Streaming plugin configuration for Seed-VC
+; This plugin handles RTP streaming to/from Seed-VC server
+
+[general]
+; Admin key for authentication
+;admin_key = supersecret
+
+; Streams can be created/destroyed via API
+;rtp_port_range = 20000-40000
+
+; Stream definitions
+; Each stream represents a voice conversion session
+
+; Seed-VC Voice Conversion Stream
+; This is a bidirectional audio stream that:
+; 1. Receives audio from browser via WebRTC
+; 2. Forwards as RTP to Seed-VC server (port 5004)
+; 3. Receives processed audio from Seed-VC (port 5005)
+; 4. Sends back to browser via WebRTC
+
+[seedvc-stream]
+type = rtp
+id = 1
+description = Seed-VC Real-Time Voice Conversion
+is_private = no
+audio = yes
+video = no
+
+; Audio configuration
+audioport = 5004
+audiopt = 111
+audiocodec = opus
+audiofmtp = useinbandfec=1;maxaveragebitrate=64000
+audiortpmap = 111 opus/48000/2
+
+; For receiving processed audio from Seed-VC
+; Note: This requires custom Janus plugin modification
+; See janus_seedvc_bridge.py for alternative approach
+;audioport_out = 5005
+
+; Metadata
+secret = seedvc2024
+pin =
+
+; Recording (optional)
+;recording_base = /opt/janus/share/janus/recordings
+;recording_enabled = no
+
+; Alternative: Use RTP forwarder for bidirectional flow
+; This requires running janus_seedvc_bridge.py separately
+[seedvc-stream-bidirectional]
+type = rtp
+id = 2
+description = Seed-VC Bidirectional Stream (via bridge)
+is_private = no
+audio = yes
+video = no
+
+; Audio from browser
+audioport = 6000
+audiopt = 111
+audiocodec = opus
+audiofmtp = useinbandfec=1;maxaveragebitrate=64000
+audiortpmap = 111 opus/48000/2
+
+; The bridge script (janus_seedvc_bridge.py) will:
+; 1. Receive RTP on port 6000 (from Janus)
+; 2. Forward to Seed-VC on port 5004
+; 3. Receive from Seed-VC on port 5005
+; 4. Forward back to Janus on port 6001
+
+secret = seedvc2024
+
+; Example: File-based stream (for testing)
+[test-audio-stream]
+type = rtp
+id = 99
+description = Test Audio Stream
+audio = yes
+video = no
+audioport = 5002
+audiopt = 111
+audiocodec = opus
+audiofmtp = useinbandfec=1
+audiortpmap = 111 opus/48000/2
+
+; For testing, you can send audio with:
+; gst-launch-1.0 audiotestsrc ! audioconvert ! audioresample ! \
+;   audio/x-raw,rate=48000 ! opusenc ! rtpopuspay ! \
+;   udpsink host=localhost port=5002
