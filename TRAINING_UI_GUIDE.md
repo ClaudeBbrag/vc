@@ -6,12 +6,12 @@ The `app_train_v2.py` provides a user-friendly web interface for training custom
 
 ## Features
 
-✅ **Easy-to-use web interface** - No command-line experience needed
-✅ **Real-time log monitoring** - Watch training progress live
-✅ **Checkpoint management** - View and manage saved models
-✅ **Training control** - Start/stop training from the browser
-✅ **Multi-model support** - Train CFM and/or AR models
-✅ **Pretrained model support** - Continue training from existing checkpoints
+[OK] **Easy-to-use web interface** - No command-line experience needed
+[OK] **Real-time log monitoring** - Watch training progress live
+[OK] **Checkpoint management** - View and manage saved models
+[OK] **Training control** - Start/stop training from the browser
+[OK] **Multi-model support** - Train CFM and/or AR models
+[OK] **Pretrained model support** - Continue training from existing checkpoints
 
 ---
 
@@ -37,10 +37,10 @@ Collect audio files and place them in a directory:
 
 ```
 my_dataset/
-├── audio1.wav
-├── audio2.wav
-├── audio3.mp3
-└── ...
+|-- audio1.wav
+|-- audio2.wav
+|-- audio3.mp3
+|-- ...
 ```
 
 **Supported formats:** wav, flac, mp3, m4a, opus, ogg
@@ -59,7 +59,7 @@ In the **Training** tab:
 
 ### 4. Start Training
 
-Click the **▶️ Start Training** button and monitor the real-time logs.
+Click the ** Start Training** button and monitor the real-time logs.
 
 ### 5. Monitor Progress
 
@@ -73,8 +73,8 @@ After training, find your checkpoints in the **Checkpoints** tab or at:
 
 ```
 runs/<run_name>/
-├── CFM_epoch_00000_step_01000.pth
-└── AR_epoch_00000_step_01000.pth
+|-- CFM_epoch_00000_step_01000.pth
+|-- AR_epoch_00000_step_01000.pth
 ```
 
 ---
@@ -126,7 +126,7 @@ Leave blank to start from scratch.
 
 View all saved model checkpoints organized by training run.
 
-1. Click **🔄 Refresh List** to update
+1. Click ** Refresh List** to update
 2. Select a run from the dropdown
 3. View CFM and AR checkpoint files
 
@@ -162,13 +162,13 @@ graph TD
 
 ### Dataset Preparation
 
-✅ **DO:**
+[OK] **DO:**
 - Use clean, high-quality audio
 - Include variety (different sentences/contexts)
 - 5-10 minutes of audio recommended
 - Keep consistent speaker/style
 
-❌ **DON'T:**
+[X] **DON'T:**
 - Use noisy or low-quality audio
 - Mix multiple speakers (unless intentional)
 - Use only one short clip
@@ -191,12 +191,12 @@ graph TD
 
 Monitor the logs for these indicators:
 
-✅ **Good signs:**
+[OK] **Good signs:**
 - Loss steadily decreasing
 - No "nan" or "inf" values
 - Regular checkpoint saves
 
-⚠️ **Warning signs:**
+[WARNING] **Warning signs:**
 - Loss stops decreasing (may need more steps)
 - Loss increases rapidly (reduce learning rate)
 - Out of memory errors (reduce batch size)
@@ -307,13 +307,13 @@ To continue training from a previous run:
 
 | Feature | CLI (`train_v2.py`) | Web UI (`app_train_v2.py`) |
 |---------|---------------------|----------------------------|
-| **Ease of Use** | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Ease of Use** | ** | ***** |
 | **Real-time Logs** | Terminal only | Browser + formatted |
 | **Checkpoint View** | Manual file browsing | Built-in viewer |
 | **Stop Training** | Ctrl+C | Button click |
-| **Multi-GPU** | ✅ Yes | ✅ Yes |
+| **Multi-GPU** | [OK] Yes | [OK] Yes |
 | **Remote Access** | SSH required | Web browser |
-| **Automation** | ✅ Easy | ⚠️ Manual |
+| **Automation** | [OK] Easy | [WARNING] Manual |
 
 **Use CLI when:**
 - Running automated training pipelines

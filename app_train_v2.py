@@ -38,7 +38,7 @@ def get_checkpoint_files(run_name):
     cfm_checkpoints = sorted(glob.glob(os.path.join(run_dir, "CFM_epoch_*_step_*.pth")))
     ar_checkpoints = sorted(glob.glob(os.path.join(run_dir, "AR_epoch_*_step_*.pth")))
 
-    result = f"📁 **Run: {run_name}**\n\n"
+    result = f" **Run: {run_name}**\n\n"
 
     if cfm_checkpoints:
         result += "**CFM Checkpoints:**\n"
@@ -82,16 +82,16 @@ def start_training(
 
     # Validation
     if not dataset_dir or not os.path.exists(dataset_dir):
-        return "❌ Error: Dataset directory does not exist!"
+        return "[X] Error: Dataset directory does not exist!"
 
     if not run_name:
-        return "❌ Error: Please provide a run name!"
+        return "[X] Error: Please provide a run name!"
 
     if not train_cfm and not train_ar:
-        return "❌ Error: Please select at least one model to train (CFM or AR)!"
+        return "[X] Error: Please select at least one model to train (CFM or AR)!"
 
     if training_process is not None:
-        return "⚠️ Training is already running!"
+        return "[WARNING] Training is already running!"
 
     # Clear log queue
     while not log_queue.empty():
@@ -141,31 +141,31 @@ def start_training(
         training_thread.start()
 
         command_str = " ".join(cmd)
-        return f"✅ **Training started!**\n\n**Command:**\n```bash\n{command_str}\n```\n\n**Run name:** {run_name}\n**Output directory:** runs/{run_name}\n\nMonitor the logs below for training progress."
+        return f"[OK] **Training started!**\n\n**Command:**\n```bash\n{command_str}\n```\n\n**Run name:** {run_name}\n**Output directory:** runs/{run_name}\n\nMonitor the logs below for training progress."
 
     except Exception as e:
         training_process = None
-        return f"❌ **Error starting training:**\n{str(e)}"
+        return f"[X] **Error starting training:**\n{str(e)}"
 
 def stop_training():
     """Stop the training process"""
     global training_process, stop_training_flag
 
     if training_process is None:
-        return "ℹ️ No training process is running."
+        return "[INFO] No training process is running."
 
     try:
         stop_training_flag = True
         training_process.terminate()
         training_process.wait(timeout=10)
         training_process = None
-        return "🛑 **Training stopped successfully!**"
+        return "[STOP] **Training stopped successfully!**"
     except subprocess.TimeoutExpired:
         training_process.kill()
         training_process = None
-        return "🛑 **Training force-killed (did not stop gracefully).**"
+        return "[STOP] **Training force-killed (did not stop gracefully).**"
     except Exception as e:
-        return f"❌ **Error stopping training:**\n{str(e)}"
+        return f"[X] **Error stopping training:**\n{str(e)}"
 
 def get_training_logs():
     """Get accumulated training logs from queue"""
@@ -182,7 +182,7 @@ def get_training_logs():
     if training_process is not None:
         # Check if process is still running
         if training_process.poll() is not None:
-            return "\n\n✅ **Training process finished!**\n"
+            return "\n\n[OK] **Training process finished!**\n"
 
     return ""
 
@@ -191,24 +191,24 @@ def check_training_status():
     global training_process
 
     if training_process is None:
-        return "⚪ **Status:** Not running"
+        return "[IDLE] **Status:** Not running"
 
     if training_process.poll() is None:
-        return "🟢 **Status:** Training in progress..."
+        return "[ACTIVE] **Status:** Training in progress..."
     else:
         exit_code = training_process.poll()
         training_process = None
         if exit_code == 0:
-            return "✅ **Status:** Training completed successfully!"
+            return "[OK] **Status:** Training completed successfully!"
         else:
-            return f"❌ **Status:** Training stopped with exit code {exit_code}"
+            return f"[X] **Status:** Training stopped with exit code {exit_code}"
 
 def create_interface():
     """Create Gradio interface"""
 
     with gr.Blocks(title="Seed-VC V2 Training") as app:
         gr.Markdown("""
-        # 🎓 Seed-VC V2 Model Training Interface
+        #  Seed-VC V2 Model Training Interface
 
         Train custom voice conversion models (V2) with an easy-to-use web interface.
 
@@ -217,10 +217,10 @@ def create_interface():
 
         with gr.Tabs():
             # Training Tab
-            with gr.Tab("⚙️ Training"):
+            with gr.Tab(" Training"):
                 with gr.Row():
                     with gr.Column(scale=2):
-                        gr.Markdown("### 📂 Dataset Configuration")
+                        gr.Markdown("###  Dataset Configuration")
 
                         dataset_dir = gr.Textbox(
                             label="Dataset Directory",
@@ -235,7 +235,7 @@ def create_interface():
                             info="Name for this training run (checkpoints will be saved to runs/<run_name>)"
                         )
 
-                        gr.Markdown("### 🔧 Training Parameters")
+                        gr.Markdown("###  Training Parameters")
 
                         with gr.Row():
                             batch_size = gr.Slider(
@@ -275,7 +275,7 @@ def create_interface():
                             info="Checkpoint save interval"
                         )
 
-                        gr.Markdown("### 🎯 Model Selection")
+                        gr.Markdown("###  Model Selection")
 
                         with gr.Row():
                             train_cfm = gr.Checkbox(
@@ -290,7 +290,7 @@ def create_interface():
                                 info="Autoregressive model"
                             )
 
-                        gr.Markdown("### 📦 Pretrained Checkpoints (Optional)")
+                        gr.Markdown("###  Pretrained Checkpoints (Optional)")
 
                         config_path = gr.Textbox(
                             label="Config Path",
@@ -311,22 +311,22 @@ def create_interface():
                         )
 
                         with gr.Row():
-                            start_btn = gr.Button("▶️ Start Training", variant="primary", size="lg")
-                            stop_btn = gr.Button("⏹️ Stop Training", variant="stop", size="lg")
+                            start_btn = gr.Button(" Start Training", variant="primary", size="lg")
+                            stop_btn = gr.Button(" Stop Training", variant="stop", size="lg")
 
                     with gr.Column(scale=1):
-                        gr.Markdown("### 📊 Training Monitor")
+                        gr.Markdown("###  Training Monitor")
 
                         status_box = gr.Textbox(
                             label="Status",
-                            value="⚪ Not running",
+                            value="[IDLE] Not running",
                             interactive=False,
                             lines=2
                         )
 
                         training_info = gr.Markdown("Waiting to start...")
 
-                        gr.Markdown("### 📜 Training Logs")
+                        gr.Markdown("###  Training Logs")
 
                         logs_box = gr.Textbox(
                             label="Real-time Logs",
@@ -375,7 +375,7 @@ def create_interface():
                 )
 
             # Checkpoints Tab
-            with gr.Tab("💾 Checkpoints"):
+            with gr.Tab(" Checkpoints"):
                 gr.Markdown("""
                 ### Saved Model Checkpoints
 
@@ -384,7 +384,7 @@ def create_interface():
 
                 with gr.Row():
                     with gr.Column(scale=1):
-                        refresh_btn = gr.Button("🔄 Refresh List", size="sm")
+                        refresh_btn = gr.Button(" Refresh List", size="sm")
                         runs_dropdown = gr.Dropdown(
                             label="Select Training Run",
                             choices=get_available_checkpoints(),
@@ -406,11 +406,11 @@ def create_interface():
                 )
 
             # Help Tab
-            with gr.Tab("❓ Help"):
+            with gr.Tab(" Help"):
                 gr.Markdown("""
                 ## Training Guide
 
-                ### 📋 Quick Start
+                ###  Quick Start
 
                 1. **Prepare your dataset:**
                    - Collect audio files (wav/flac/mp3/m4a/opus/ogg)
@@ -424,7 +424,7 @@ def create_interface():
                    - Set **Max Steps** (1000+ recommended, 100 minimum)
 
                 3. **Select model type:**
-                   - ✅ **Train CFM** (recommended for voice conversion)
+                   - [OK] **Train CFM** (recommended for voice conversion)
                    - **Train AR** (optional, for advanced style transfer)
 
                 4. **Start training:**
@@ -432,7 +432,7 @@ def create_interface():
                    - Monitor logs in real-time
                    - Checkpoints saved every N steps
 
-                ### 🎯 Training Tips
+                ###  Training Tips
 
                 - **Minimum data:** 1 utterance, but more is better (5-10 minutes recommended)
                 - **Training time:** ~2 minutes on T4 GPU for 100 steps
@@ -440,7 +440,7 @@ def create_interface():
                 - **Steps:** 100 minimum, 1000+ for best results
                 - **GPU recommended:** Training on CPU is very slow
 
-                ### 📁 Output Files
+                ###  Output Files
 
                 Checkpoints are saved to: `runs/<run_name>/`
 
@@ -448,7 +448,7 @@ def create_interface():
                 - **AR checkpoints:** `AR_epoch_*_step_*.pth`
                 - **Config copy:** `<config_name>.yaml`
 
-                ### 🔧 Using Trained Models
+                ###  Using Trained Models
 
                 After training, use your models with:
 
@@ -467,21 +467,21 @@ def create_interface():
                   --ar-checkpoint-path runs/my_run/AR_epoch_00000_step_01000.pth
                 ```
 
-                ### ⚙️ Advanced Options
+                ###  Advanced Options
 
                 - **Pretrained checkpoints:** Continue training from existing models
                 - **Config path:** Use custom model architectures
                 - **Num workers:** Parallel data loading (0 for Windows)
                 - **Multi-GPU:** Use `accelerate config` before training
 
-                ### 🐛 Troubleshooting
+                ###  Troubleshooting
 
                 - **Out of memory:** Reduce batch size to 1
                 - **Training too slow:** Check GPU is being used
                 - **No improvement:** Train for more steps (1000+)
                 - **Process won't stop:** Click Stop button twice
 
-                ### 📚 Resources
+                ###  Resources
 
                 - [GitHub Repository](https://github.com/Plachtaa/seed-vc)
                 - [Paper](https://arxiv.org/abs/2406.02402)

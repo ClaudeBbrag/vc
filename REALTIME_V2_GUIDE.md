@@ -8,12 +8,12 @@
 
 ## Features
 
-✅ **Batch Conversion** - High-quality offline voice conversion
-✅ **Style Transfer** - Convert accent, emotion, and speaking style
-✅ **Speaker Anonymization** - Convert to neutral "average" voice
-✅ **Advanced Controls** - Full control over all V2 parameters
-✅ **Web Interface** - Easy-to-use Gradio interface
-⚠️ **Real-Time Mode** - Experimental low-latency conversion
+[OK] **Batch Conversion** - High-quality offline voice conversion
+[OK] **Style Transfer** - Convert accent, emotion, and speaking style
+[OK] **Speaker Anonymization** - Convert to neutral "average" voice
+[OK] **Advanced Controls** - Full control over all V2 parameters
+[OK] **Web Interface** - Easy-to-use Gradio interface
+[WARNING] **Real-Time Mode** - Experimental low-latency conversion
 
 ---
 
@@ -48,7 +48,7 @@ This creates a public URL you can share.
 
 ## Usage Modes
 
-### 🎵 Batch Conversion (Recommended)
+###  Batch Conversion (Recommended)
 
 **Best for:**
 - High-quality voice conversion
@@ -69,7 +69,7 @@ This creates a public URL you can share.
 - RTX 4090: ~1-2 seconds per second of audio
 - With compilation: ~50% faster after first run
 
-### 🎤 Real-Time Mode (Experimental)
+###  Real-Time Mode (Experimental)
 
 **Best for:**
 - Testing and experimentation
@@ -121,7 +121,7 @@ This creates a public URL you can share.
 #### **High Quality (Slow)**
 ```
 Diffusion Steps: 50-100
-Convert Style: ✅ Enabled
+Convert Style: [OK] Enabled
 Reference Audio: 10-20 seconds
 Expected Time: 3-10s per second of audio
 ```
@@ -129,7 +129,7 @@ Expected Time: 3-10s per second of audio
 #### **Balanced (Default)**
 ```
 Diffusion Steps: 30
-Convert Style: ❌ Disabled
+Convert Style: [X] Disabled
 Reference Audio: 5-10 seconds
 Expected Time: 2-5s per second of audio
 ```
@@ -137,7 +137,7 @@ Expected Time: 2-5s per second of audio
 #### **Fast (Lower Quality)**
 ```
 Diffusion Steps: 10-20
-Convert Style: ❌ Disabled
+Convert Style: [X] Disabled
 Reference Audio: 3-5 seconds
 Expected Time: 1-2s per second of audio
 ```
@@ -168,12 +168,12 @@ Expected Latency: 1-2+ seconds
 
 | Feature | Batch Mode | Real-Time Mode |
 |---------|------------|----------------|
-| **Quality** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Quality** | ***** | *** |
 | **Speed** | Medium | Fast (with good GPU) |
 | **Latency** | N/A | 1-2+ seconds |
-| **Style Transfer** | ✅ Full support | ⚠️ Limited |
-| **Long Audio** | ✅ Yes (chunks) | ❌ Short clips only |
-| **Browser Support** | ✅ All browsers | ⚠️ Some browsers |
+| **Style Transfer** | [OK] Full support | [WARNING] Limited |
+| **Long Audio** | [OK] Yes (chunks) | [X] Short clips only |
+| **Browser Support** | [OK] All browsers | [WARNING] Some browsers |
 | **GPU Required** | Recommended | **Required** |
 
 ### V1 vs V2 Real-Time
@@ -182,11 +182,11 @@ Expected Latency: 1-2+ seconds
 |---------|-------------------------|----------------------------|
 | **Interface** | Desktop GUI | Web browser |
 | **Latency** | ~430ms | ~1-2 seconds |
-| **Style Transfer** | ❌ No | ✅ Yes |
-| **Quality** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Style Transfer** | [X] No | [OK] Yes |
+| **Quality** | **** | ***** |
 | **Setup** | Complex | Easy |
-| **Remote Access** | ❌ No | ✅ Yes |
-| **Optimized Buffering** | ✅ Yes | ⚠️ Basic |
+| **Remote Access** | [X] No | [OK] Yes |
+| **Optimized Buffering** | [OK] Yes | [WARNING] Basic |
 
 **Recommendation**: For production real-time use, V1 desktop GUI is better optimized. V2 is better for batch processing with style transfer.
 
@@ -369,17 +369,17 @@ python app_realtime_v2.py \
 
 ```
 User Input (Audio)
-    ↓
+    ->
 Content Extractor (Whisper + ASTRAL)
-    ↓
+    ->
 Length Regulator
-    ↓
+    ->
 [Optional: AR Model for style transfer]
-    ↓
+    ->
 CFM Model (Diffusion)
-    ↓
+    ->
 Vocoder (BigVGAN)
-    ↓
+    ->
 Output Audio
 ```
 
@@ -494,10 +494,10 @@ sf.write("output.wav", result[0], 22050)
 | Feature | `app_realtime_v2.py` | `app_vc_v2.py` |
 |---------|----------------------|----------------|
 | **Purpose** | Real-time + Batch | Batch only |
-| **Real-Time** | ✅ Experimental | ❌ No |
-| **Streaming** | ✅ Yes | ✅ Yes |
+| **Real-Time** | [OK] Experimental | [X] No |
+| **Streaming** | [OK] Yes | [OK] Yes |
 | **Interface** | Modern tabs | Single page |
-| **Batch Quality** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Batch Quality** | ***** | ***** |
 
 **Use app_realtime_v2.py for**: Real-time experiments, modern UI
 **Use app_vc_v2.py for**: Stable batch processing, simpler interface
@@ -509,7 +509,7 @@ sf.write("output.wav", result[0], 22050)
 | **Models** | V2 (CFM+AR) | V1 (DiT) |
 | **Interface** | Web browser | Desktop GUI |
 | **Latency** | 1-2s | ~430ms |
-| **Style Transfer** | ✅ Yes | ❌ No |
+| **Style Transfer** | [OK] Yes | [X] No |
 | **Setup** | Easy | Medium |
 | **Optimization** | Basic | Advanced (SOLA, VAD) |
 

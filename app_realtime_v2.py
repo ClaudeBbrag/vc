@@ -90,7 +90,7 @@ def load_models(cfm_checkpoint_path=None, ar_checkpoint_path=None, compile_ar=Fa
         vc_wrapper.compile_ar()
 
     print("Models loaded successfully!")
-    return "✅ Models loaded successfully!"
+    return "[OK] Models loaded successfully!"
 
 @torch.no_grad()
 @torch.inference_mode()
@@ -99,7 +99,7 @@ def prepare_reference_audio(reference_audio_path, max_duration=25):
     global rt_state, vc_wrapper
 
     if reference_audio_path is None:
-        return "❌ Please upload a reference audio file"
+        return "[ERROR] Please upload a reference audio file"
 
     try:
         # Load and prepare reference audio
@@ -136,10 +136,10 @@ def prepare_reference_audio(reference_audio_path, max_duration=25):
             )
 
         duration = len(ref_wave) / vc_wrapper.sr
-        return f"✅ Reference audio prepared successfully!\nDuration: {duration:.2f}s"
+        return f"[OK] Reference audio prepared successfully!\nDuration: {duration:.2f}s"
 
     except Exception as e:
-        return f"❌ Error preparing reference audio: {str(e)}"
+        return f"[ERROR] Error preparing reference audio: {str(e)}"
 
 @torch.no_grad()
 @torch.inference_mode()
@@ -270,13 +270,13 @@ def batch_convert_audio(
     global vc_wrapper
 
     if source_audio is None:
-        return None, "❌ Please upload source audio"
+        return None, "[ERROR] Please upload source audio"
 
     if reference_audio is None and not anonymization_only:
-        return None, "❌ Please upload reference audio"
+        return None, "[ERROR] Please upload reference audio"
 
     try:
-        status = "🔄 Converting audio..."
+        status = "[PROCESSING] Converting audio..."
 
         # Save temporary files
         import tempfile
@@ -322,20 +322,20 @@ def batch_convert_audio(
             os.unlink(ref_path)
 
         if result is not None:
-            status = f"✅ Conversion complete! Time: {elapsed:.2f}s"
+            status = f"[OK] Conversion complete! Time: {elapsed:.2f}s"
             return (vc_wrapper.sr, result), status
         else:
-            return None, "❌ Conversion failed"
+            return None, "[ERROR] Conversion failed"
 
     except Exception as e:
-        return None, f"❌ Error: {str(e)}"
+        return None, f"[ERROR] Error: {str(e)}"
 
 def create_interface():
     """Create Gradio interface"""
 
     with gr.Blocks(title="Seed-VC V2 Real-Time Conversion") as app:
         gr.Markdown("""
-        # 🎙️ Seed-VC V2 Real-Time Voice Conversion
+        # Seed-VC V2 Real-Time Voice Conversion
 
         Real-time voice conversion using V2 models with style transfer capabilities.
 
@@ -346,7 +346,7 @@ def create_interface():
 
         with gr.Tabs():
             # Batch Conversion Tab
-            with gr.Tab("🎵 Batch Conversion"):
+            with gr.Tab("Batch Conversion"):
                 gr.Markdown("""
                 Upload audio files for high-quality voice conversion with full V2 features.
                 """)
@@ -436,7 +436,7 @@ def create_interface():
                             )
 
                         batch_convert_btn = gr.Button(
-                            "🎯 Convert Audio",
+                            "Convert Audio",
                             variant="primary",
                             size="lg"
                         )
@@ -471,7 +471,7 @@ def create_interface():
                 )
 
             # Real-Time Tab (Simplified)
-            with gr.Tab("🎤 Real-Time (Experimental)"):
+            with gr.Tab("Real-Time (Experimental)"):
                 gr.Markdown("""
                 **Note**: Real-time processing requires powerful GPU and has higher latency.
                 For best results, use batch mode.
@@ -488,7 +488,7 @@ def create_interface():
                             label="Reference Audio",
                             type="filepath"
                         )
-                        rt_prepare_btn = gr.Button("📋 Prepare Reference")
+                        rt_prepare_btn = gr.Button("Prepare Reference")
                         rt_status = gr.Textbox(
                             label="Status",
                             value="Upload reference audio and click Prepare",
@@ -549,7 +549,7 @@ def create_interface():
                 )
 
             # Help Tab
-            with gr.Tab("❓ Help"):
+            with gr.Tab("Help"):
                 gr.Markdown("""
                 ## Usage Guide
 
